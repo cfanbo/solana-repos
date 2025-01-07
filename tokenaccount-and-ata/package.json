@@ -1,0 +1,26 @@
+{
+  "name": "my-solana-program",
+  "version": "1.0.0",
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifiers": true
+  },
+  "description": "",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true
+  },
+  "scripts": {
+    "start": "tsx client.ts",
+    "sec": "tsx b.ts"
+  }
+}
