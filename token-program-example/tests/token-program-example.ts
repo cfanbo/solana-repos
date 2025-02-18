@@ -35,10 +35,11 @@ describe("token-program-example", () => {
 
   console.log("ProgramID: ", program.programId.toBase58());
 
+  // FT 保留uri 为空即可
   const metadata = {
     name: "MyToken",
     symbol: "MT",
-    uri: "https://raw.githubusercontent.com/solana-developers/program-examples/new-examples/tokens/tokens/.assets/spl-token.json",
+    uri: "",
   };
 
   it.only("Create Mint", async () => {
