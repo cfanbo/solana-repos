@@ -1,7 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
+import { getLogs } from "@solana-developers/helpers";
 import { TokenProgramExample } from "../target/types/token_program_example";
 import { Keypair, SystemProgram, PublicKey } from "@solana/web3.js";
+
 
 import {
   TOKEN_2022_PROGRAM_ID,
@@ -33,14 +35,24 @@ describe("token-program-example", () => {
 
   console.log("ProgramID: ", program.programId.toBase58());
 
-  it("Create Mint", async () => {
-    const tx = await program.methods.createMint().accounts({
-      // signer: payer.publicKey,
-      mint: mint.publicKey,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      // systemProgram: SystemProgram.programId,
-    }).signers([payer, mint]).rpc({ commitment: "confirmed" });
+  const metadata = {
+    name: "MyToken",
+    symbol: "MT",
+    uri: "https://raw.githubusercontent.com/solana-developers/program-examples/new-examples/tokens/tokens/.assets/spl-token.json",
+  };
 
+  it.only("Create Mint", async () => {
+    const tx = await program.methods
+      .createMint(metadata.name, metadata.symbol, metadata.uri)
+      .accounts({
+        // signer: payer.publicKey,
+        mint: mint.publicKey,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        // systemProgram: SystemProgram.programId,
+      }).signers([payer, mint]).rpc({ commitment: "confirmed" });
+
+    console.log('Success!');
+    console.log(`   Mint Address: ${mint.publicKey}`);
     console.log("Your transaction signature", tx);
 
     const mintAccount = await getMint(

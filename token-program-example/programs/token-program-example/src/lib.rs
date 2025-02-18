@@ -1,7 +1,18 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::metadata::{
+    create_metadata_accounts_v3, mpl_token_metadata::types::DataV2, CreateMetadataAccountsV3,
+    Metadata,
+};
+
 use anchor_spl::token_interface::{
     self, Mint, MintTo, TokenAccount, TokenInterface, TransferChecked,
+};
+
+use mpl_token_metadata::{
+    instructions::CreateV1Builder,
+    instructions::CreateV1CpiBuilder,
+    types::{PrintSupply, TokenStandard},
 };
 
 // https://www.anchor-lang.com/docs/tokens/basics
@@ -14,15 +25,41 @@ pub mod token_program_example {
     use super::*;
 
     // 创建代币Token
-    pub fn create_mint(ctx: Context<CreateMint>) -> Result<()> {
+    pub fn create_mint(
+        ctx: Context<CreateMint>,
+        token_name: String,
+        token_symbol: String,
+        token_uri: String,
+    ) -> Result<()> {
+        msg!("Creating metadata account");
+
         msg!(
-            "Mint account : {:?}",
-            ctx.accounts.mint.to_account_info().owner
+            "token_metadata_program address: {:?}",
+            ctx.accounts.token_metadata_program.key()
         );
-        msg!(
-            "Mint account program owner: {:?}",
-            ctx.accounts.mint.to_account_info().owner
-        );
+
+        const limitSupply: u64 = 100000;
+        // Cross Program Invocation (CPI)
+        // https://developers.metaplex.com/token-metadata/token-2022   https://developers.metaplex.com/token-metadata/mint
+        CreateV1CpiBuilder::new(&ctx.accounts.token_metadata_program)
+            .metadata(&ctx.accounts.metadata_account.to_account_info())
+            .mint(&ctx.accounts.mint.to_account_info(), true)
+            .authority(&ctx.accounts.signer)
+            .payer(&ctx.accounts.signer)
+            .update_authority(&ctx.accounts.signer, true)
+            .system_program(&ctx.accounts.system_program)
+            .sysvar_instructions(&ctx.accounts.rent.to_account_info())
+            .spl_token_program(Some(&ctx.accounts.token_program)) // here
+            .token_standard(mpl_token_metadata::types::TokenStandard::Fungible)
+            .seller_fee_basis_points(0) //
+            .print_supply(mpl_token_metadata::types::PrintSupply::Limited(limitSupply))
+            .name(token_name)
+            .symbol(token_symbol)
+            .uri(token_uri)
+            // .decimals(6)
+            .invoke()?;
+
+        msg!("Token created successfully.");
 
         Ok(())
     }
@@ -95,8 +132,20 @@ pub struct CreateMint<'info> {
         mint::freeze_authority = signer.key(),
     )]
     pub mint: InterfaceAccount<'info, Mint>,
+
+    /// CHECK: Validate address by deriving pda
+    #[account(
+        mut,
+        seeds = [b"metadata", token_metadata_program.key().as_ref(), mint.key().as_ref()],
+        bump,
+        seeds::program = token_metadata_program.key(),
+    )]
+    pub metadata_account: UncheckedAccount<'info>,
+
+    pub token_metadata_program: Program<'info, Metadata>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
